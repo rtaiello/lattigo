@@ -148,10 +148,56 @@ func (cks KeySwitchProtocol) GenShare(skInput, skOutput *rlwe.SecretKey, ct *rlw
 	}
 }
 
+// Expected noise: ctNoise + encFreshSk + smudging
+func (cks KeySwitchProtocol) GenShareSmudgeError(skInput ShamirSecretShareQP, skOutput *rlwe.SecretKey, ct *rlwe.Ciphertext, shareSmudge ShamirSecretShareQ, shareOut *KeySwitchShare) {
+
+	levelQ := utils.Min(shareOut.Value.Level(), ct.Value[1].Level())
+
+	shareOut.Value.Resize(levelQ)
+
+	ringQ := cks.params.RingQ().AtLevel(levelQ)
+
+	ringQ.Sub(skInput.Poly.Q, skOutput.Value.Q, cks.bufDelta)
+
+	var c1NTT ring.Poly
+	if !ct.IsNTT {
+		ringQ.NTTLazy(ct.Value[1], cks.buf)
+		c1NTT = cks.buf
+	} else {
+		c1NTT = ct.Value[1]
+	}
+
+	// c1NTT * (skIn - skOut)
+	ringQ.MulCoeffsMontgomeryLazy(c1NTT, cks.bufDelta, shareOut.Value)
+
+	if !ct.IsNTT {
+		// InvNTT(c1NTT * (skIn - skOut)) + e
+		ringQ.INTTLazy(shareOut.Value, shareOut.Value)
+		//TODO: fix this
+		ringQ.Add(shareOut.Value, shareSmudge.Poly, shareOut.Value)
+	} else {
+		// c1NTT * (skIn - skOut) + e
+		ringQ.NTT(shareSmudge.Poly, shareSmudge.Poly)
+		ringQ.Add(shareOut.Value, shareSmudge.Poly, shareOut.Value)
+	}
+}
+
 // AggregateShares is the second part of the unique round of the [KeySwitchProtocol] protocol. Upon receiving the j-1 elements each party computes:
 //
 // [ctx[0] + sum((skInput_i - skOutput_i) * ctx[0] + e_i), ctx[1]]
 func (cks KeySwitchProtocol) AggregateShares(share1, share2 KeySwitchShare, shareOut *KeySwitchShare) (err error) {
+	if share1.Level() != share2.Level() || share1.Level() != shareOut.Level() {
+		return fmt.Errorf("cannot AggregateShares: shares levels do not match")
+	}
+
+	cks.params.RingQ().AtLevel(share1.Level()).Add(share1.Value, share2.Value, shareOut.Value)
+	return
+}
+
+// AggregateShares is the second part of the unique round of the [KeySwitchProtocol] protocol. Upon receiving the j-1 elements each party computes:
+//
+// [ctx[0] + sum(\lambda_i * (skInput_i - skOutput_i) * ctx[0] + [e]_i), ctx[1]]
+func (cks KeySwitchProtocol) AggregateSharesSmudgeError(share1, share2 KeySwitchShare, shareOut *KeySwitchShare) (err error) {
 	if share1.Level() != share2.Level() || share1.Level() != shareOut.Level() {
 		return fmt.Errorf("cannot AggregateShares: shares levels do not match")
 	}

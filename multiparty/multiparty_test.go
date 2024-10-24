@@ -481,9 +481,9 @@ func testThreshold(tc *testContext, levelQ, levelP, bpw2 int, t *testing.T) {
 			type Party struct {
 				Thresholdizer
 				Combiner
-				gen  ShamirPolynomial
+				gen  ShamirPolynomialQP
 				sk   *rlwe.SecretKey
-				tsks ShamirSecretShare
+				tsks ShamirSecretShareQP
 				tsk  *rlwe.SecretKey
 				tpk  ShamirPublicPoint
 			}
@@ -505,21 +505,21 @@ func testThreshold(tc *testContext, levelQ, levelP, bpw2 int, t *testing.T) {
 				pi.Combiner = NewCombiner(tc.params, pi.tpk, shamirPks, threshold)
 			}
 
-			shares := make(map[*Party]map[*Party]ShamirSecretShare, tc.nParties())
+			shares := make(map[*Party]map[*Party]ShamirSecretShareQP, tc.nParties())
 			var err error
 			// Every party generates a share for every other party
 			for _, pi := range P {
 
-				pi.gen, err = pi.Thresholdizer.GenShamirPolynomial(threshold, pi.sk)
+				pi.gen, err = pi.Thresholdizer.GenShamirPolynomialQP(threshold, pi.sk)
 				if err != nil {
 					t.Error(err)
 				}
 
-				shares[pi] = make(map[*Party]ShamirSecretShare)
+				shares[pi] = make(map[*Party]ShamirSecretShareQP)
 				for _, pj := range P {
 					shares[pi][pj] = pi.Thresholdizer.AllocateThresholdSecretShare()
 					share := shares[pi][pj]
-					pi.Thresholdizer.GenShamirSecretShare(pj.tpk, pi.gen, &share)
+					pi.Thresholdizer.GenShamirSecretShareQP(pj.tpk, pi.gen, &share)
 				}
 			}
 
@@ -548,7 +548,7 @@ func testThreshold(tc *testContext, levelQ, levelP, bpw2 int, t *testing.T) {
 			ringQP := tc.params.RingQP()
 			recSk := rlwe.NewSecretKey(tc.params)
 			for _, pi := range activeParties {
-				pi.Combiner.GenAdditiveShare(activeShamirPks, pi.tpk, pi.tsks, pi.tsk)
+				pi.Combiner.GenAdditiveShareQP(activeShamirPks, pi.tpk, pi.tsks, pi.tsk)
 				ringQP.Add(pi.tsk.Value, recSk.Value, recSk.Value)
 			}
 

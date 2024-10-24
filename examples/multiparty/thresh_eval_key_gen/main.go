@@ -39,8 +39,8 @@ type party struct {
 
 	i        int
 	sk       *rlwe.SecretKey
-	tsk      multiparty.ShamirSecretShare
-	ssp      multiparty.ShamirPolynomial
+	tsk      multiparty.ShamirSecretShareQP
+	ssp      multiparty.ShamirPolynomialQP
 	shamirPk multiparty.ShamirPublicPoint
 
 	genTaskQueue chan genTask
@@ -78,7 +78,7 @@ func (p *party) Run(wg *sync.WaitGroup, params rlwe.Parameters, N int, P []*part
 				activePk = append(activePk, pi.shamirPk)
 			}
 			sk = rlwe.NewSecretKey(params)
-			if err := p.GenAdditiveShare(activePk, p.shamirPk, p.tsk, sk); err != nil {
+			if err := p.GenAdditiveShareQP(activePk, p.shamirPk, p.tsk, sk); err != nil {
 				panic(err)
 			}
 		}
@@ -231,7 +231,7 @@ func main() {
 			pi.Thresholdizer = multiparty.NewThresholdizer(params)
 			pi.tsk = pi.AllocateThresholdSecretShare()
 			var err error
-			pi.ssp, err = pi.GenShamirPolynomial(t, pi.sk)
+			pi.ssp, err = pi.GenShamirPolynomialQP(t, pi.sk)
 			if err != nil {
 				panic(err)
 			}
@@ -253,14 +253,14 @@ func main() {
 		}
 
 		fmt.Println("Performing threshold setup")
-		shares := make(map[*party]map[*party]multiparty.ShamirSecretShare, len(P))
+		shares := make(map[*party]map[*party]multiparty.ShamirSecretShareQP, len(P))
 		for _, pi := range P {
 
-			shares[pi] = make(map[*party]multiparty.ShamirSecretShare)
+			shares[pi] = make(map[*party]multiparty.ShamirSecretShareQP)
 
 			for _, pj := range P {
 				share := pi.AllocateThresholdSecretShare()
-				pi.GenShamirSecretShare(pj.shamirPk, pi.ssp, &share)
+				pi.GenShamirSecretShareQP(pj.shamirPk, pi.ssp, &share)
 				shares[pi][pj] = share
 			}
 		}

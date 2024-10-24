@@ -170,10 +170,10 @@ func benchThreshold(params rlwe.Parameters, levelQ, levelP, bpw2 int, t int, b *
 	type Party struct {
 		Thresholdizer
 		Combiner
-		gen ShamirPolynomial
+		gen ShamirPolynomialQP
 		s   *rlwe.SecretKey
 		sk  *rlwe.SecretKey
-		tsk ShamirSecretShare
+		tsk ShamirSecretShareQP
 	}
 
 	shamirPks := make([]ShamirPublicPoint, t)
@@ -189,7 +189,7 @@ func benchThreshold(params rlwe.Parameters, levelQ, levelP, bpw2 int, t int, b *
 
 	b.Run(benchString(params, "Thresholdizer/GenShamirPolynomial", levelQ, levelP, bpw2)+fmt.Sprintf("/threshold=%d", t), func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			p.gen, _ = p.Thresholdizer.GenShamirPolynomial(t, p.s)
+			p.gen, _ = p.Thresholdizer.GenShamirPolynomialQP(t, p.s)
 		}
 	})
 
@@ -197,7 +197,7 @@ func benchThreshold(params rlwe.Parameters, levelQ, levelP, bpw2 int, t int, b *
 
 	b.Run(benchString(params, "Thresholdizer/GenShamirSecretShare", levelQ, levelP, bpw2)+fmt.Sprintf("/threshold=%d", t), func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			p.Thresholdizer.GenShamirSecretShare(shamirPks[0], p.gen, &shamirShare)
+			p.Thresholdizer.GenShamirSecretShareQP(shamirPks[0], p.gen, &shamirShare)
 		}
 	})
 
@@ -211,7 +211,7 @@ func benchThreshold(params rlwe.Parameters, levelQ, levelP, bpw2 int, t int, b *
 
 	b.Run(benchString(params, "Combiner/GenAdditiveShare", levelQ, levelP, bpw2)+fmt.Sprintf("/threshold=%d", t), func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			p.Combiner.GenAdditiveShare(shamirPks, shamirPks[0], p.tsk, p.sk)
+			p.Combiner.GenAdditiveShareQP(shamirPks, shamirPks[0], p.tsk, p.sk)
 		}
 	})
 }

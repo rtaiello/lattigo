@@ -133,6 +133,13 @@ func (thr Thresholdizer) GenShamirSecretShareQ(recipient ShamirPublicPoint, secr
 func (thr Thresholdizer) GenShamirSecretShareQP(recipient ShamirPublicPoint, secretPoly ShamirPolynomialQP, shareOut *ShamirSecretShareQP) {
 	thr.ringQP.EvalPolyScalar(secretPoly.Value, uint64(recipient), shareOut.Poly)
 }
+func (thr Thresholdizer) AggregateSharesQ(share1, share2 ShamirSecretShareQ, outShare *ShamirSecretShareQ) (err error) {
+	if share1.Level() != share2.Level() || share1.Level() != outShare.Level() {
+		return fmt.Errorf("cannot AggregateShares: shares level do not match")
+	}
+	thr.ringQ.AtLevel(share1.Level()).Add(share1.Poly, share2.Poly, outShare.Poly)
+	return
+}
 
 // AggregateShares aggregates two [ShamirSecretShareQP] and stores the result in outShare.
 func (thr Thresholdizer) AggregateShares(share1, share2 ShamirSecretShareQP, outShare *ShamirSecretShareQP) (err error) {

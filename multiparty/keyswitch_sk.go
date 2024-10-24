@@ -187,6 +187,11 @@ func (ckss KeySwitchShare) BinarySize() int {
 	return ckss.Value.BinarySize()
 }
 
+// add getter for noiseSampler
+func (cks KeySwitchProtocol) GetNoiseSampler() ring.Sampler {
+	return cks.noiseSampler
+}
+
 // WriteTo writes the object on an [io.Writer]. It implements the [io.WriterTo]
 // interface, and will write exactly object.BinarySize() bytes on w.
 //
